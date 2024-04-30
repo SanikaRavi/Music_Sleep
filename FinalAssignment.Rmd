@@ -1,0 +1,237 @@
+---
+title: "***Data Analysis and Visualisation***"
+author: "PSY6422_230242182"
+date: "28/04/2024"
+output: pdf_document
+---
+
+![Image](Data Analysis and Visualisation/SleepImage.jpeg)
+<center> 
+# ***Does Bedtime Music Listening Improve Subjective Sleep Quality***
+# ***and Next-Morning Well-Being in Young Adults?***
+</center>
+
+# **Research Question:**
+
+### Sleep plays a fundamental role in the holistic well-being of individuals, with numerous factors impacting its quality. Among these factors, music has emerged as a potential facilitator in enhancing sleep quality, primarily attributed to its capacity to induce relaxation and mitigate stress. However, extant literature presents a mixed perspective on the efficacy of music as a sleep aid, particularly within the young adults.
+
+### The research question at hand pertains to the potential augmentation of subjective sleep quality and subsequent morning well-being indices—comprising perceived stress, positive affect, negative affect, and life satisfaction—through the intervention of music listening prior to bedtime.
+
+### *Research Question*: Does Bedtime Music Listening Improve Subjective Sleep Quality and Next-Morning Well-Being (Percieved Stress, Possitive Affect, Negetive Affect and Life Satisfaction)in Young Adults?
+
+
+```{r , echo = TRUE, results = 'hide', warning = FALSE, message = FALSE}
+
+
+# installing the required psckages
+install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+install.packages("gridExtra",  repos = "http://cran.us.r-project.org")
+install.packages("ggpmisc",  repos = "http://cran.us.r-project.org")
+install.packages("ggpubr",  repos = "http://cran.us.r-project.org")
+library(tidyverse)
+library(dplyr)
+library(gridExtra)
+library(grid)
+library(ggpmisc)
+library(ggpubr)
+library(ggplot2)
+library(readr)
+```
+
+
+# **Data**
+
+### The dataset originates from a research paper entitled "Does Bedtime Music Listening Improve Subjective Sleep Quality and Next-Morning Well-Being in Young Adults? A Randomized Cross-Over Trial," accessible through the SMU Research Data Repository website. [Link]:(https://researchdata.smu.edu.sg/articles/dataset/Data_and_code_for_Does_bedtime_music_listening_improve_subjective_sleep_quality_and_next-morning_well-being_in_young_adults/21252285)
+
+### In a rigorously designed investigation, researchers administered a 15-day randomized cross-over trial encompassing a cohort of 62 young adults. Each participant underwent a series of 5 consecutive nights of bedtime listening under varied conditions: exposure to happy music, sad music, and pink noise—a consistent ambient sound chosen as an active control condition. Notably, pink noise, characterized by a consistent frequency spectrum, serves to attenuate disruptive stimuli, thereby fostering an environment conducive to uninterrupted sleep. 
+
+### Across a timeframe spanning 3 weeks, participants engaged in nightly listening sessions under different conditions, totaling 5 nights each of happy music, sad music, and pink noise. Upon awakening each morning, participants provided subjective assessments encompassing their perceived sleep quality, levels of stress, positive and negative affect, and current life satisfaction.
+
+```{r}
+
+# loading the raw data 
+  rawdata <- read_csv("Data Analysis and Visualisation/Music_Sleep/musslp_cleaneddata.csv")
+  
+
+#
+head(rawdata)
+
+```
+
+# **Data Transformation**
+
+### The raw data underwent grouping by stimulus, resulting in the computation of mean values for daily sleep, daily stress, positive affect, negative affect, and life satisfaction corresponding to each stimulus. This procedure facilitated a comparative analysis of the impact of each condition on these variables. Subsequently, an additional column was appended to the dataset to capture the color code assigned to each condition, aiding in visual interpretation. Furthermore, another column was introduced to delineate the association between specific stimuli and their respective conditions.
+
+```{r}
+#transforming data to better 
+transformed_data <- rawdata %>%
+    group_by(stimulusID) %>%
+    summarize( 
+      meandailySleep = mean(dailySleep),
+      meandailyStress = mean(dailyStress),
+      meandailyNAO = mean(dailyNAO),
+      meandailyPAO = mean(dailyPAO),
+      meandailyLS = mean(dailyLS),
+      
+    )
+  transformed_data <- transformed_data %>%
+    mutate(Color = case_when(
+      stimulusID %in% c("H1", "H2", "H3", "H4", "H5") ~ '#FFD700',
+      stimulusID %in% c("P1", "P2", "P3", "P4", "P5") ~ '#FFB7C5',
+      TRUE ~ '#6495ED'
+    ))
+  
+  transformed_data <- transformed_data %>%
+    mutate(condition = case_when(
+      stimulusID %in% c("H1", "H2", "H3", "H4", "H5") ~ 'Happy',
+      stimulusID %in% c("P1", "P2", "P3", "P4", "P5") ~ 'Pinknoise',
+      TRUE ~ 'Sad'
+    ))
+  
+  head(transformed_data,15)
+```
+
+# **Visualisation**
+
+# Colors
+
+### The color selection for the bars adhered to principles of color theory, leveraging the psychological impact of different hues on human mood and behavior. Accordingly, bars representing Happy music were rendered in a vibrant yellow hue, symbolizing feelings of joy and positivity. Conversely, Sad music bars were depicted in a calming blue shade, evoking sentiments of melancholy or sadness. Finally, the color pink was specifically chosen for bars representing pink noise, aligning with its association with tranquility and neutrality. This deliberate selection aimed to enhance the visual representation of each condition while also intuitively conveying their respective emotional connotations.
+
+# Plotting
+
+### The plot presented herein illustrates the impact of each stimulus within every condition on the subjective daily sleep quality reported by participants. This visualization facilitates an examination of the trends observed across the 5-day period for each condition, enabling a comparative analysis among them. Through this graphical representation, insights into the relative efficacy of different stimuli in influencing sleep quality can be gleaned, aiding in a comprehensive understanding of their respective effects.
+
+### Additionally, a custom legend has been crafted to complement the plot, displaying the distinct colors corresponding to each condition. 
+
+```{r}
+ 
+#Creating a plot to demonstrate the mean subjective sleep quality over the days for each condition
+
+ DailySleep <- ggplot( data = transformed_data, aes(x = stimulusID, y = meandailySleep,
+                                                    fill = condition)) +
+    geom_bar(position = "dodge", stat="identity",width = 0.5)+   
+    scale_fill_manual(values = unique(transformed_data$Color)) +
+    theme(legend.position = "none",
+          # customising the text 
+          plot.title = element_text(size = 15, hjust = 0.5, face = "bold", vjust = 0.5),  
+          plot.caption = element_text(hjust = 0.5, vjust = 0.5),
+          axis.title.y = element_text(size = 12, hjust = 0.5, vjust = 0.5),  
+          axis.title.x = element_text(size = 12, hjust = 0.5, vjust = 0.5),  
+          axis.text.x = element_text(hjust = 0.5, vjust = 0.5),  
+          axis.text.y = element_text(hjust = 0.5, vjust = 0.5)) +
+    scale_y_continuous(name = "Subjective Sleep Quality",                 
+                       breaks = seq(0, 8),        
+                       limits = c(0, 8),  expand =c(0,0))+ 
+    ggtitle("Average Subjective Sleep Quality by Condition") +        
+    labs(x = "Stimulus used over the days",                             
+         caption = "Higher values = Worse Quality")+
+ 
+   # creating a custom legend
+  
+   annotate("text", x =  rep(14.3, 3), y = c(6.25,6,5.75 ),                     
+            label = c("Happy Music", "Pink noise", "Sad Music"), hjust = 0, size = 2)+
+   
+   annotate("text", x =  14, y = 6.60,                     
+            label = "Condition", hjust = 0, fontface = "bold", size = 3)+
+   
+   annotate("rect", xmin = 13.9, xmax = 14.2, ymin = 6.18, ymax = 6.32, 
+            fill = '#FFD700', alpha = 1)+
+   
+   annotate("rect", xmin = 13.9, xmax = 14.2, ymin = 5.93, ymax = 6.07, 
+            fill = '#FFB7C5', alpha = 1)+
+   
+   annotate("rect", xmin = 13.9, xmax = 14.2, ymin = 5.68, ymax = 5.82, 
+            fill = '#6495ED', alpha = 1)
+ 
+    
+  DailySleep 
+  
+```
+
+### The plot depicted below showcases the influence of each stimulus within each condition on the next morning well-being of the participants. Similar to the previous plot, this visualization facilitates additional comparative examination of the outcomes of each condition across various factors of next morning well-being.
+
+
+
+```{r}
+
+# creating a function to make plots for the factors included in next morning well-being
+ CreatePlot <- function(data, y_var, title, y_label, y_breaks, y_limits, y_expand, caption)
+   {
+    p <- ggplot(data = data, aes(x = stimulusID, y = !!sym(y_var), fill = condition)) +
+      geom_bar(position = "dodge", stat = "identity", width = 0.3) +
+      scale_fill_manual(values = unique(data$Color)) +
+      theme(legend.position = "none",
+            plot.title = element_text(size = 10, hjust = 0.5, face = "bold", vjust = 0.5),  
+            plot.caption = element_text(hjust = 0.5, vjust = 0.5),
+            axis.title.y = element_text(size = 8, hjust = 0.5, vjust = 0.5),  
+            axis.title.x = element_text(size = 8, hjust = 0.5, vjust = 0.5),  
+            axis.text.x = element_text(hjust = 0.5, vjust = 0.5),  
+            axis.text.y = element_text(hjust = 0.5, vjust = 0.5),
+            plot.margin = unit(c(0.5, 0, 0.5, 0.5), "cm")) +
+      
+      scale_y_continuous(name = y_label, breaks = y_breaks, limits = y_limits, expand = y_expand) +
+      labs(x = "", caption = caption)
+    
+    return(p)
+  }
+
+ 
+
+ DailyStress <- CreatePlot(
+   transformed_data, "meandailyStress", "Next Morning Well-Being by Condition",
+                           "Next Morning Percieved Stress", seq(0, 8), c(0, 8), c(0, 0),
+                           "Higher values = More Stress")
+  
+  PositiveAffect <- CreatePlot(
+    transformed_data, "meandailyPAO", "Next Morning Well-Being by Condition",
+                               "Next Morning Positive Affect", seq(0, 4), c(0, 4), c(0, 0),
+                               "Higher values = More Positive Affect")
+  
+  NegativeAffect <- CreatePlot(
+    transformed_data, "meandailyNAO", "Next Morning Well-Being by Condition",
+                               "Next Morning Negative Affect", seq(0, 3), c(0, 3), c(0, 0),
+                               "Higher values = More Negative Affect")
+  
+  LifeSatisfaction <- CreatePlot(
+    transformed_data, "meandailyLS", "Next Morning Well-Being by Condition", 
+                                 "Next Morning Life Satisfaction", seq(0, 5), c(0, 5), c(0, 0),
+                                 "Higher values = Higher Life Satisfaction")
+
+legend <- get_legend(
+    ggplot(transformed_data, aes(x = stimulusID, y = meandailyStress, fill = condition)) +
+    geom_bar(position = "dodge", stat = "identity", width = 0.3) +
+    scale_fill_manual(values = unique(transformed_data$Color)) +
+    theme(legend.position = "right")
+  )
+
+CombinePlot <- grid.arrange(
+  PositiveAffect, NegativeAffect, legend, DailyStress, LifeSatisfaction,
+                            nrow = 2, ncol = 3, widths = c(2, 2, 1))
+  
+  # Creating the title for combined plots
+  Title<- textGrob("Next Morning Well-Being by Condition", gp = gpar(fontsize = 16))
+  
+  # Adding the title to the combined plots
+  NMWellbeing <- grid.arrange(Title, CombinePlot, heights = c(1, 8, 1), nrow = 3) 
+  
+  NMWellbeing
+  
+```
+
+# **Interpretation**
+
+### The plot depicting daily sleep quality reveals that participants experienced higher sleep quality when exposed to sad music compared to instances of listening to happy music or pink noise. Interestingly, those exposed to pink noise before sleep reported lower sleep quality compared to both happy and sad music conditions.
+
+###  Analysis of the next morning well-being plots unveils several noteworthy trends. In the "Positive Affect" graph, participants exposed to either sad or happy music prior to bedtime reported heightened positive affect, indicative of increased feelings of joy or enthusiasm, compared to those subjected to pink noise. Conversely, the "Negative Affect" graph illustrates that individuals listening to happy or sad music experienced diminished negative affect, characterized by reduced feelings of anxiety or stress, in contrast to the control group exposed to pink noise. This suggests a beneficial impact of the intervention in alleviating negative emotions. Similarly, the "Stress" graph depicts lower stress levels among participants exposed to happy or sad music compared to those subjected to pink noise. Finally, the "Life Satisfaction" graph showcases higher life satisfaction scores, reflecting overall well-being and contentment, among participants exposed to happy or sad music relative to those exposed to pink noise. These findings collectively suggest a favorable influence of music intervention on next morning well-being across multiple dimensions.
+
+### The presented plots underscore the effectiveness of listening to music before bedtime in improving both subjective sleep quality and next morning well-being.
+
+
+# **Reference**
+
+### (SMU), N. B. M. M., (SMU), V. L. Y. Q., CHONG, J. S., LEW, Z., & HARTANTO, A. (2021). Data and code for: Does bedtime music listening improve subjective sleep quality and next-morning well-being in young adults (Version 1). SMU Research Data Repository (RDR). https://doi.org/10.25440/smu.21252285.v1
+
+### Majeed, N. M., Lua, V. Y. Q., Chong, J. S., Lew, Z., & Hartanto, A. (2021). Does bedtime music listening improve subjective sleep quality and next-morning well-being in young adults? A randomized cross-over trial. Psychomusicology: Music, Mind, and Brain, 31(3-4), 149–158. https://doi.org/10.1037/pmu0000283
+
+
+
